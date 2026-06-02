@@ -1,0 +1,29 @@
+{
+  "name": "smart-iot-rollcall-local-db",
+  "version": "1.0.0",
+  "description": "Smart IoT Roll-Call and Health Monitoring Server with Local JSON Database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "iot",
+    "esp8266",
+    "local-db",
+    "express",
+    "node"
+  ],
+  "author": "Computer CT Student",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
