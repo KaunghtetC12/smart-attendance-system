@@ -1,7 +1,7 @@
 /**
  * Smart IoT Roll-Call & Health Monitoring System Node Server
  * Firebase ကို လုံးဝမသုံးဘဲ Local JSON File Database စနစ်ဖြင့် အလုပ်လုပ်မည်။
- * GitHub နှင့် Render တင်ရုံဖြင့် ၁၀၀% အခမဲ့ အဆင်သင့် သုံးနိုင်သော စနစ်ဖြစ်သည်။
+ * Vercel Cloud Serverless ပတ်ဝန်းကျင်တွင် Error ကင်းစင်စွာ Run နိုင်ရန် ပြင်ဆင်ထားသည်။
  */
 
 const express = require('express');
@@ -11,9 +11,11 @@ const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_FILE = path.join(__dirname, 'database.json');
 
-// Middleware များ သတ်မှတ်ခြင်း - ပြင်ဆင်ပြီး (Static files path correctly mapped to public folder)
+// 🔥 Vercel Cloud အတွက် Database သိမ်းဆည်းမည့် လမ်းကြောင်းအား /tmp/ဖိုဒါသို့ ပြောင်းလဲပြင်ဆင်ခြင်း
+const DB_FILE = path.join('/tmp', 'database.json');
+
+// Middleware များ သတ်မှတ်ခြင်း
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -31,8 +33,12 @@ const initDatabase = () => {
             ],
             attendance: {} // Format: { "subjectId_studentId": { present, time, date, temp, spo2, bpm, alert } }
         };
-        fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf8');
-        console.log("📝 Initialized local database.json file successfully.");
+        try {
+            fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf8');
+            console.log("📝 Initialized database.json in /tmp directory successfully.");
+        } catch (err) {
+            console.error("Failed to initialize database:", err);
+        }
     }
 };
 
@@ -58,7 +64,7 @@ const writeDB = (data) => {
 };
 
 // ==========================================
-// API ENDPOINTS (ဆရာမ Web Dashboard နှင့် ESP32 အတွက်)
+// API ENDPOINTS (ဆရာမ Web Dashboard နှင့် ESP8266 အတွက်)
 // ==========================================
 
 // ၁။ ကျောင်းသားစာရင်းအားလုံးကို ဖတ်ရန် API
@@ -110,12 +116,11 @@ app.delete('/api/students/delete/:id', (req, res) => {
 
 // ၄။ အတန်းတက်ရောက်မှုဒေတာအားလုံးကို ဖတ်ရန် API
 app.get('/api/attendance', (req, res) => {
-    const db = require('./database.json'); // dynamically load or use readDB()
-    const currentDb = readDB();
-    res.json({ success: true, attendance: currentDb.attendance });
+    const db = readDB();
+    res.json({ success: true, attendance: db.attendance });
 });
 
-// ၅။ ESP32 Hardware သို့မဟုတ် Web Device Simulator မှ Rollcall ပို့ရန် API
+// ၅။ ESP8266 Hardware မှ Rollcall ပို့ရန် API
 app.post('/api/rollcall', (req, res) => {
     const { studentId, subjectId, temp, spo2, bpm } = req.body;
 
@@ -184,7 +189,7 @@ app.post('/api/attendance/reset', (req, res) => {
     res.json({ success: true, message: `ဘာသာရပ် ID (${subjectId}) ၏ အချက်အလက်များကို ရှင်းလင်းပြီးပါပြီ။` });
 });
 
-// Home Route served - Always serve index.html from public directory
+// Home Route served
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
